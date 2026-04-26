@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall
 
     from custom_components.divera247.data import Divera247ConfigEntry
+    from divera247.models.pull import PullData
 
 PLATFORMS: Sequence[Platform] = (
     Platform.BINARY_SENSOR,
@@ -80,6 +81,7 @@ async def async_setup_entry(
     )
 
     await coordinator.async_config_entry_first_refresh()
+    _async_update_entry_title(hass, entry, coordinator.data)
 
     ucr_id: int | None = None
     if coordinator.data is not None:
@@ -100,6 +102,26 @@ async def async_setup_entry(
     _async_register_services(hass)
 
     return True
+
+
+def _async_update_entry_title(
+    hass: HomeAssistant,
+    entry: Divera247ConfigEntry,
+    data: PullData | None,
+) -> None:
+    """Align entry title with cluster/UCR-based naming."""
+    if data is None:
+        return
+    cluster = data.cluster
+    cluster_name = cluster.name if cluster is not None and cluster.name else "Unbekannt"
+    ucr_id = data.ucr_active or data.ucr_default
+    new_title = (
+        f"Feuerwehr {cluster_name} {ucr_id}"
+        if ucr_id is not None
+        else f"Feuerwehr {cluster_name}"
+    )
+    if entry.title != new_title:
+        hass.config_entries.async_update_entry(entry, title=new_title)
 
 
 async def async_unload_entry(

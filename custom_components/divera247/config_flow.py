@@ -2,9 +2,8 @@
 Config flow for the DIVERA 24/7 integration.
 
 Only an access key is collected. The key is validated by attempting a single
-``pull/all`` request against the live API; on success we use the account's
-email (from the payload) as unique ID so the same key cannot be configured
-twice.
+``pull/all`` request against the live API; on success we derive a friendly
+entry title from the fire station/cluster name plus active UCR ID.
 """
 
 from __future__ import annotations
@@ -82,9 +81,8 @@ class Divera247ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         Call the API with the given key and return a friendly title.
 
-        The title prefers ``firstname lastname`` from the user payload, falls
-        back to the account email and finally to a generic string so the
-        entry always has a sensible display name.
+        The title follows ``Feuerwehr <cluster_name> <ucr_id>`` so generated
+        entity IDs are stable and not based on personal user names.
         """
         client = Divera247ApiClient(access_key=access_key)
         try:
@@ -98,13 +96,13 @@ class Divera247ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 msg,
             )
 
-        user = response.data.user
-        if user is not None:
-            name = " ".join(
-                part for part in (user.firstname, user.lastname) if part
-            ).strip()
-            if name:
-                return name
-            if user.email:
-                return user.email
-        return "DIVERA 24/7"
+        data = response.data
+        cluster_name = (
+            data.cluster.name
+            if data.cluster is not None and data.cluster.name
+            else "Unbekannt"
+        )
+        ucr_id = data.ucr_active or data.ucr_default
+        if ucr_id is not None:
+            return f"Feuerwehr {cluster_name} {ucr_id}"
+        return f"Feuerwehr {cluster_name}"
