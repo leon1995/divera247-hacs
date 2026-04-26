@@ -1,0 +1,84 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "DIVERA 24/7",
+        "description": "Gib deinen pers\u00f6nlichen DIVERA 24/7 Zugangsschl\u00fcssel (Access Key) ein. Den findest du in der DIVERA Web-App unter Benutzerprofil \u2192 API.",
+        "data": {
+          "access_key": "Zugangsschl\u00fcssel"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Der Zugangsschl\u00fcssel wurde abgelehnt. Bitte pr\u00fcfe, ob er noch g\u00fcltig ist.",
+      "cannot_connect": "Die DIVERA 24/7 API ist nicht erreichbar.",
+      "unknown": "Unerwarteter Fehler. Details stehen im Log."
+    },
+    "abort": {
+      "already_configured": "Dieser DIVERA 24/7 Zugangsschl\u00fcssel ist bereits konfiguriert."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {"name": "Status"},
+      "status_id": {"name": "Status-ID"},
+      "status_note": {"name": "Statusnotiz"},
+      "status_vehicle_id": {"name": "Status Fahrzeug-ID"},
+      "status_changed": {"name": "Status ge\u00e4ndert"},
+      "next_status_reset": {"name": "N\u00e4chste Statusr\u00fccksetzung"},
+      "new_alarms": {"name": "Neue Alarme"},
+      "open_alarms": {"name": "Offene Alarme"},
+      "new_messages": {"name": "Neue Mitteilungen"},
+      "latest_alarm": {"name": "Letzter Alarm"},
+      "latest_alarm_time": {"name": "Zeitpunkt letzter Alarm"},
+      "latest_alarm_location": {"name": "Ort letzter Alarm"},
+      "next_event": {"name": "N\u00e4chster Termin"},
+      "next_event_start": {"name": "Beginn n\u00e4chster Termin"},
+      "user": {"name": "Benutzer"},
+      "unit": {"name": "Einheit"},
+      "cluster_id": {"name": "Cluster-ID"},
+      "ucr_active": {"name": "Aktive UCR"},
+      "ucr_default": {"name": "Standard-UCR"},
+      "server_time": {"name": "Serverzeit"},
+      "can_set_status": {"name": "Darf Status setzen"},
+      "can_manage_alarms": {"name": "Darf Alarme verwalten"},
+      "can_send_messages": {"name": "Darf Mitteilungen senden"},
+      "can_manage_news": {"name": "Darf News verwalten"},
+      "can_set_vehicle_status": {"name": "Darf Fahrzeugstatus setzen"}
+    },
+    "binary_sensor": {
+      "active_alarm": {"name": "Aktiver Alarm"},
+      "unread_alarm": {"name": "Ungelesener Alarm"},
+      "status_reset_scheduled": {"name": "Statusr\u00fccksetzung geplant"}
+    },
+    "calendar": {
+      "events": {"name": "Termine"}
+    },
+    "device_tracker": {
+      "vehicle_location": {"name": "Fahrzeugposition"}
+    },
+    "select": {
+      "status_select": {"name": "Status"}
+    }
+  },
+  "services": {
+    "set_status": {
+      "name": "Benutzerstatus setzen",
+      "description": "Setzt den aktuellen DIVERA 24/7 Benutzerstatus.",
+      "fields": {
+        "status_id": {
+          "name": "Status-ID",
+          "description": "Numerische DIVERA Status-ID, auf die gewechselt werden soll."
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Optionale Freitext-Notiz zur Status\u00e4nderung."
+        },
+        "vehicle_id": {
+          "name": "Fahrzeug-ID",
+          "description": "Optionale Fahrzeug-ID, die mit der Status\u00e4nderung verkn\u00fcpft wird."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "DIVERA 24/7",
+        "description": "Enter your personal DIVERA 24/7 access key. You can find it in the DIVERA web app under your user profile \u2192 API.",
+        "data": {
+          "access_key": "Access key"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The access key was rejected. Please verify that it is still valid.",
+      "cannot_connect": "Unable to reach the DIVERA 24/7 API.",
+      "unknown": "Unexpected error. Check the logs for details."
+    },
+    "abort": {
+      "already_configured": "This DIVERA 24/7 access key is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {"name": "Status"},
+      "status_id": {"name": "Status ID"},
+      "status_note": {"name": "Status note"},
+      "status_vehicle_id": {"name": "Status vehicle ID"},
+      "status_changed": {"name": "Status changed"},
+      "next_status_reset": {"name": "Next status reset"},
+      "new_alarms": {"name": "New alarms"},
+      "open_alarms": {"name": "Open alarms"},
+      "new_messages": {"name": "New messages"},
+      "latest_alarm": {"name": "Latest alarm"},
+      "latest_alarm_time": {"name": "Latest alarm time"},
+      "latest_alarm_location": {"name": "Latest alarm location"},
+      "next_event": {"name": "Next event"},
+      "next_event_start": {"name": "Next event start"},
+      "user": {"name": "User"},
+      "unit": {"name": "Unit"},
+      "cluster_id": {"name": "Cluster ID"},
+      "ucr_active": {"name": "Active UCR"},
+      "ucr_default": {"name": "Default UCR"},
+      "server_time": {"name": "Server time"},
+      "can_set_status": {"name": "Can set status"},
+      "can_manage_alarms": {"name": "Can manage alarms"},
+      "can_send_messages": {"name": "Can send messages"},
+      "can_manage_news": {"name": "Can manage news"},
+      "can_set_vehicle_status": {"name": "Can set vehicle status"}
+    },
+    "binary_sensor": {
+      "active_alarm": {"name": "Active alarm"},
+      "unread_alarm": {"name": "Unread alarm"},
+      "status_reset_scheduled": {"name": "Status reset scheduled"}
+    },
+    "calendar": {
+      "events": {"name": "Events"}
+    },
+    "device_tracker": {
+      "vehicle_location": {"name": "Vehicle location"}
+    },
+    "select": {
+      "status_select": {"name": "Status"}
+    }
+  },
+  "services": {
+    "set_status": {
+      "name": "Set user status",
+      "description": "Set the current DIVERA 24/7 user status.",
+      "fields": {
+        "status_id": {
+          "name": "Status ID",
+          "description": "Numeric DIVERA status ID to switch to."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Optional free-text note attached to the status change."
+        },
+        "vehicle_id": {
+          "name": "Vehicle ID",
+          "description": "Optional vehicle ID associated with the status change."
+        }
+      }
+    }
+  }
+}

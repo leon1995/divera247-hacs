@@ -1,0 +1,30 @@
+set_status:
+  name: Set user status
+  description: >
+    Set the current DIVERA 24/7 user status. Takes the numeric DIVERA status
+    ID (see the ``status_id`` attribute of the "Status" sensor or the DIVERA
+    admin UI) and optionally a free-text note and a vehicle ID.
+  fields:
+    status_id:
+      name: Status ID
+      description: Numeric DIVERA status ID to switch to.
+      required: true
+      example: 42
+      selector:
+        number:
+          mode: box
+          min: 1
+    note:
+      name: Note
+      description: Optional free-text note attached to the status change.
+      example: "Heading to station"
+      selector:
+        text:
+    vehicle_id:
+      name: Vehicle ID
+      description: Optional vehicle ID associated with the status change.
+      example: 123
+      selector:
+        number:
+          mode: box
+          min: 1
