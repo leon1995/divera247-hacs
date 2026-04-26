@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.device_tracker import SourceType
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
@@ -105,7 +105,9 @@ class Divera247VehicleTracker(Divera247Entity, TrackerEntity):
         return SourceType.GPS
 
     @property
-    def extra_state_attributes(self) -> dict[str, str | int | None]:
+    def extra_state_attributes(
+        self,
+    ) -> dict[str, Any]:
         """Return additional vehicle metadata."""
         vehicle = self._vehicle
         if vehicle is None:

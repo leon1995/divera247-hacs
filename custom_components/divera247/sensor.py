@@ -33,9 +33,23 @@ if TYPE_CHECKING:
     from divera247.models.pull import PullData
 
 
-def _timestamp(ts: int | None) -> datetime.datetime | None:
+def _timestamp(
+    ts: int | float | str | datetime.datetime | None,
+) -> datetime.datetime | None:
     if ts is None:
         return None
+    if isinstance(ts, datetime.datetime):
+        if ts.tzinfo is not None:
+            return ts
+        return ts.replace(tzinfo=datetime.UTC)
+    if isinstance(ts, str):
+        ts = ts.strip()
+        if not ts:
+            return None
+        if ts.isdigit():
+            ts = int(ts)
+        else:
+            return None
     return datetime.datetime.fromtimestamp(ts, tz=datetime.UTC)
 
 
@@ -108,15 +122,15 @@ def _latest_news(data: PullData) -> NewsResult | None:
 def _next_event(data: PullData) -> EventResult | None:
     if data.events is None or not data.events.items:
         return None
-    now_ts = int(datetime.datetime.now(tz=datetime.UTC).timestamp())
+    now_ts = datetime.datetime.now(tz=datetime.UTC)
     candidates = [
         event
         for event in data.events.items.values()
-        if event.date and event.date >= now_ts
+        if (event_date := _timestamp(event.date)) is not None and event_date >= now_ts
     ]
     if not candidates:
         return None
-    return min(candidates, key=lambda event: event.date or now_ts)
+    return min(candidates, key=lambda event: _timestamp(event.date) or now_ts)
 
 
 def _latest_alarm_title(data: PullData) -> str | None:

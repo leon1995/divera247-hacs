@@ -5,8 +5,11 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING
 
-from homeassistant.components.calendar import CalendarEntity, CalendarEvent
-from homeassistant.helpers.entity import EntityDescription
+from homeassistant.components.calendar import (
+    CalendarEntity,
+    CalendarEntityDescription,
+    CalendarEvent,
+)
 
 from custom_components.divera247.entity import Divera247Entity
 
@@ -24,6 +27,8 @@ if TYPE_CHECKING:
 def _event_start(event: EventResult) -> datetime.datetime | None:
     if event.date is None:
         return None
+    if isinstance(event.date, datetime.datetime):
+        return event.date
     return datetime.datetime.fromtimestamp(event.date, tz=datetime.UTC)
 
 
@@ -51,7 +56,7 @@ async def async_setup_entry(
         [
             Divera247EventsCalendar(
                 entry.runtime_data.coordinator,
-                EntityDescription(
+                CalendarEntityDescription(
                     key="events",
                     translation_key="events",
                 ),
@@ -68,7 +73,7 @@ class Divera247EventsCalendar(Divera247Entity, CalendarEntity):
     def __init__(
         self,
         coordinator: Divera247DataUpdateCoordinator,
-        entity_description: EntityDescription,
+        entity_description: CalendarEntityDescription,
     ) -> None:
         """Initialize the calendar entity."""
         super().__init__(coordinator, entity_description)

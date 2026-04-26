@@ -96,6 +96,11 @@ class Divera247WebSocketListener:
                 self._dispatch(event)
         except WebSocketAuthenticationError as exc:
             LOGGER.error("DIVERA WebSocket authentication failed permanently: %s", exc)
+        except Exception as exc:  # noqa: BLE001
+            if self._is_shutdown_exception_group(exc):
+                LOGGER.debug("DIVERA WebSocket listener stopped during shutdown")
+                return
+            raise
         except asyncio.CancelledError:
             raise
         except Exception:  # noqa: BLE001
@@ -119,6 +124,23 @@ class Divera247WebSocketListener:
             )
             return
         LOGGER.debug("DIVERA unknown WebSocket event: type=%s", event.type)
+
+    @staticmethod
+    def _is_shutdown_exception_group(exc: BaseException) -> bool:
+        """Return ``True`` if ``exc`` only contains known WS shutdown errors."""
+        nested_exceptions = getattr(exc, "exceptions", None)
+        if not isinstance(nested_exceptions, tuple):
+            return False
+        for nested in nested_exceptions:
+            if isinstance(getattr(nested, "exceptions", None), tuple):
+                if not Divera247WebSocketListener._is_shutdown_exception_group(nested):
+                    return False
+                continue
+            if not isinstance(nested, RuntimeError):
+                return False
+            if "cancel scope" not in str(nested):
+                return False
+        return True
 
     def _apply_user_status(self, event: UserStatusEvent) -> None:
         """Patch the cached status in place and notify listeners."""
