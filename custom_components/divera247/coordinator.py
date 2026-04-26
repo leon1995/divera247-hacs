@@ -45,16 +45,29 @@ class Divera247DataUpdateCoordinator(DataUpdateCoordinator["PullData | None"]):
             msg = "DIVERA 24/7 API reported success=false"
             LOGGER.warning(msg)
             raise UpdateFailed(msg)
+        if response.data is None:
+            msg = "DIVERA pull/all returned no data"
+            raise UpdateFailed(msg)
 
         try:
             vehicle_status = await client.async_get_vehicle_status()
         except Divera247ApiError as exc:
+            if not self.vehicle_status_by_id:
+                msg = "Vehicle status refresh failed during initial setup"
+                raise UpdateFailed(msg) from exc
             LOGGER.debug(
                 "Vehicle status refresh failed, keeping previous cache: %s",
                 exc,
             )
         else:
-            if vehicle_status.success:
+            if not vehicle_status.success:
+                if not self.vehicle_status_by_id:
+                    msg = "DIVERA vehicle-status API reported success=false"
+                    raise UpdateFailed(msg)
+                LOGGER.warning(
+                    "DIVERA vehicle-status API reported success=false; keeping previous cache"
+                )
+            else:
                 self.vehicle_status_by_id = {
                     str(item.id): item
                     for item in vehicle_status.data
