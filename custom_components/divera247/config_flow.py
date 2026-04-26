@@ -84,7 +84,10 @@ class Divera247ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         The title follows ``Feuerwehr <cluster_name> <ucr_id>`` so generated
         entity IDs are stable and not based on personal user names.
         """
-        client = Divera247ApiClient(access_key=access_key)
+        client = await self.hass.async_add_executor_job(
+            Divera247ApiClient,
+            access_key,
+        )
         try:
             response = await client.async_get_pull_all()
         finally:

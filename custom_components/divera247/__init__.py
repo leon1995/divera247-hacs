@@ -66,7 +66,10 @@ async def async_setup_entry(
     entry: Divera247ConfigEntry,
 ) -> bool:
     """Set up a DIVERA 24/7 config entry."""
-    client = Divera247ApiClient(access_key=entry.data[CONF_ACCESS_KEY])
+    client = await hass.async_add_executor_job(
+        Divera247ApiClient,
+        entry.data[CONF_ACCESS_KEY],
+    )
 
     coordinator = Divera247DataUpdateCoordinator(
         hass=hass,
