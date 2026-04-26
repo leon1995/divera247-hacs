@@ -94,16 +94,14 @@ class Divera247WebSocketListener:
                 ucr_id=self._ucr_id,
             ):
                 self._dispatch(event)
+        except asyncio.CancelledError:
+            raise
         except WebSocketAuthenticationError as exc:
             LOGGER.error("DIVERA WebSocket authentication failed permanently: %s", exc)
         except Exception as exc:  # noqa: BLE001
             if self._is_shutdown_exception_group(exc):
                 LOGGER.debug("DIVERA WebSocket listener stopped during shutdown")
                 return
-            raise
-        except asyncio.CancelledError:
-            raise
-        except Exception:  # noqa: BLE001
             LOGGER.exception("DIVERA WebSocket listener crashed; giving up")
 
     def _dispatch(

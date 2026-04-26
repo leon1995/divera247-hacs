@@ -30,11 +30,11 @@ if TYPE_CHECKING:
     from divera247.models.alarm import AlarmResult
     from divera247.models.event import EventResult
     from divera247.models.news import NewsResult
-    from divera247.models.pull import PullData
+    from divera247.models.pull import PullData, VehicleStatusItem
 
 
 def _timestamp(
-    ts: int | float | str | datetime.datetime | None,
+    ts: float | str | datetime.datetime | None,
 ) -> datetime.datetime | None:
     if ts is None:
         return None
@@ -407,6 +407,28 @@ SENSORS: Sequence[Divera247SensorEntityDescription] = (
 )
 
 
+def _vehicle_payload(vehicle: VehicleStatusItem) -> Mapping[str, Any]:
+    """Return a dict payload for a vehicle model."""
+    if hasattr(vehicle, "model_dump"):
+        return vehicle.model_dump(mode="json", exclude_none=True)
+    if hasattr(vehicle, "dict"):
+        return vehicle.dict(exclude_none=True)
+    if hasattr(vehicle, "__dict__"):
+        return {k: v for k, v in vars(vehicle).items() if v is not None}
+    return {}
+
+
+def _vehicle_status_value(vehicle: VehicleStatusItem) -> Any:
+    """Pick a best-effort status value for a vehicle sensor."""
+    return (
+        vehicle.fmsstatus
+        if vehicle.fmsstatus is not None
+        else vehicle.fmsstatus_note
+        if vehicle.fmsstatus_note is not None
+        else vehicle.fmsstatus_id
+    )
+
+
 async def async_setup_entry(
     hass: HomeAssistant,  # noqa: ARG001
     entry: Divera247ConfigEntry,
@@ -415,7 +437,13 @@ async def async_setup_entry(
     """Set up the sensor platform."""
     coordinator = entry.runtime_data.coordinator
     async_add_entities(
-        Divera247Sensor(coordinator, description) for description in SENSORS
+        [
+            *(Divera247Sensor(coordinator, description) for description in SENSORS),
+            *(
+                Divera247VehicleStatusSensor(coordinator, vehicle_id)
+                for vehicle_id in coordinator.vehicle_status_by_id
+            ),
+        ]
     )
 
 
@@ -447,3 +475,54 @@ class Divera247Sensor(Divera247Entity, SensorEntity):
         if data is None or self.entity_description.attrs_fn is None:
             return None
         return self.entity_description.attrs_fn(data)
+
+
+class Divera247VehicleStatusSensor(Divera247Entity, SensorEntity):
+    """Sensor entity exposing status and metadata for one vehicle."""
+
+    _attr_icon = "mdi:fire-truck"
+
+    def __init__(
+        self,
+        coordinator: Divera247DataUpdateCoordinator,
+        vehicle_id: str,
+    ) -> None:
+        """Initialise vehicle sensor entity."""
+        super().__init__(
+            coordinator,
+            SensorEntityDescription(key=f"vehicle_{vehicle_id}_status"),
+        )
+        self._vehicle_id = vehicle_id
+
+    @property
+    def _vehicle(self) -> VehicleStatusItem | None:
+        return self.coordinator.vehicle_status_by_id.get(self._vehicle_id)
+
+    @property
+    def name(self) -> str:
+        """Return a human-readable entity name."""
+        vehicle = self._vehicle
+        if vehicle is None:
+            return f"Vehicle {self._vehicle_id}"
+        vehicle_name = vehicle.name or vehicle.shortname
+        if vehicle_name:
+            return vehicle_name
+        return f"Vehicle {self._vehicle_id}"
+
+    @property
+    def native_value(self) -> Any:
+        """Return current vehicle status."""
+        vehicle = self._vehicle
+        if vehicle is None:
+            return None
+        return _vehicle_status_value(vehicle)
+
+    @property
+    def extra_state_attributes(self) -> Mapping[str, Any]:
+        """Return all available vehicle metadata as attributes."""
+        vehicle = self._vehicle
+        if vehicle is None:
+            return {"vehicle_id": self._vehicle_id}
+        payload = dict(_vehicle_payload(vehicle))
+        payload.setdefault("vehicle_id", payload.get("id", self._vehicle_id))
+        return payload
