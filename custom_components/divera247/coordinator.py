@@ -65,7 +65,8 @@ class Divera247DataUpdateCoordinator(DataUpdateCoordinator["PullData | None"]):
                     msg = "DIVERA vehicle-status API reported success=false"
                     raise UpdateFailed(msg)
                 LOGGER.warning(
-                    "DIVERA vehicle-status API reported success=false; keeping previous cache"
+                    "DIVERA vehicle-status API reported success=false; "
+                    "keeping previous cache"
                 )
             else:
                 self.vehicle_status_by_id = {

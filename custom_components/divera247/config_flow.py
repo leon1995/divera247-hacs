@@ -102,7 +102,8 @@ class Divera247ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if data.cluster is not None and data.cluster.name
             else "Unbekannt"
         )
+        title_base = cluster_name.strip()
         ucr_id = data.ucr_active or data.ucr_default
         if ucr_id is not None:
-            return f"Feuerwehr {cluster_name} {ucr_id}"
-        return f"Feuerwehr {cluster_name}"
+            return f"{title_base} {ucr_id}"
+        return title_base

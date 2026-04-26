@@ -114,11 +114,14 @@ def _async_update_entry_title(
         return
     cluster = data.cluster
     cluster_name = cluster.name if cluster is not None and cluster.name else "Unbekannt"
+    title_base = cluster_name.strip()
+    if not title_base.casefold().startswith("feuerwehr"):
+        title_base = f"Feuerwehr {title_base}"
     ucr_id = data.ucr_active or data.ucr_default
     new_title = (
-        f"Feuerwehr {cluster_name} {ucr_id}"
+        f"{title_base} {ucr_id}"
         if ucr_id is not None
-        else f"Feuerwehr {cluster_name}"
+        else title_base
     )
     if entry.title != new_title:
         hass.config_entries.async_update_entry(entry, title=new_title)

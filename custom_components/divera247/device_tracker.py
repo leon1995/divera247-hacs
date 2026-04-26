@@ -7,10 +7,8 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.device_tracker import SourceType
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 
-from custom_components.divera247.const import DOMAIN
 from custom_components.divera247.entity import Divera247Entity
 
 if TYPE_CHECKING:
@@ -52,7 +50,6 @@ class Divera247VehicleTracker(Divera247Entity, TrackerEntity):
 
     _attr_has_entity_name = True
     _attr_translation_key = "vehicle_location"
-    _attr_device_info: DeviceInfo | None = None
 
     def __init__(
         self,
@@ -65,14 +62,6 @@ class Divera247VehicleTracker(Divera247Entity, TrackerEntity):
         self._vehicle_id = vehicle_id
         self._attr_unique_id = (
             f"{coordinator.config_entry.entry_id}_{description.key}_{vehicle_id}"
-        )
-        self._attr_device_info = DeviceInfo(
-            identifiers={
-                (DOMAIN, f"{coordinator.config_entry.entry_id}_vehicle_{vehicle_id}")
-            },
-            manufacturer="DIVERA GmbH",
-            name=f"Vehicle {vehicle_id}",
-            via_device=(DOMAIN, coordinator.config_entry.entry_id),
         )
 
     @property
