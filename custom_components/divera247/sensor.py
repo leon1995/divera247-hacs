@@ -441,16 +441,7 @@ def _status_count_breakdown(data: PullData, status_id: int) -> Mapping[str, obje
                 qualification_name = qualification.name
         by_qualification_name[qualification_name] = count
 
-    if not by_qualification_name:
-        return {}
-
-    # Expose each qualification as its own top-level attribute entry.
-    # Keep the grouped map for backward compatibility with existing dashboards.
-    payload: dict[str, object] = {"by_qualification": by_qualification_name}
-    for qualification_name, count in by_qualification_name.items():
-        key = f"qualification_{qualification_name}"
-        payload[key] = count
-    return payload
+    return by_qualification_name
 
 
 @dataclass(frozen=True, kw_only=True)
