@@ -24,11 +24,15 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+from custom_components.divera247.api import Divera247ApiError
 from custom_components.divera247.const import LOGGER
 from divera247.websocket import (
     ClusterPullEvent,
+    ClusterVehicleEvent,
+    ClusterMonitorEvent,
+    UnknownEvent,
     UserStatusEvent,
     WebSocketAuthenticationError,
     stream_websocket,
@@ -106,22 +110,71 @@ class Divera247WebSocketListener:
 
     def _dispatch(
         self,
-        event: Any,
+        event: (
+            UserStatusEvent
+            | ClusterPullEvent
+            | ClusterVehicleEvent
+            | ClusterMonitorEvent
+            | UnknownEvent
+        ),
     ) -> None:
         """Route a parsed WS event to the coordinator."""
         if isinstance(event, UserStatusEvent):
             self._apply_user_status(event)
             return
-        if isinstance(event, ClusterPullEvent) or event.type == "cluster-vehicle":
+        if isinstance(event, ClusterVehicleEvent):
             LOGGER.debug(
-                "DIVERA websocket change event (%s); refreshing",
+                "DIVERA websocket vehicle change event (%s); refreshing vehicle cache",
                 event.type,
             )
-            self._hass.async_create_task(
-                self._coordinator.async_request_refresh(),
+            self._hass.async_create_task(self._async_refresh_vehicle_status())
+            return
+        if isinstance(event, ClusterPullEvent | ClusterMonitorEvent):
+            LOGGER.debug("DIVERA websocket change event (%s); refreshing", event.type)
+            self._schedule_full_refresh()
+            return
+        if event.type == "cluster-vehicle":
+            LOGGER.debug(
+                "DIVERA websocket fallback vehicle event (%s); refreshing vehicle cache",
+                event.type,
             )
+            self._hass.async_create_task(self._async_refresh_vehicle_status())
+            return
+        if event.type in {"cluster-monitor", "cluster-pull"}:
+            LOGGER.debug("DIVERA websocket fallback change event (%s); refreshing", event.type)
+            self._schedule_full_refresh()
             return
         LOGGER.debug("DIVERA unknown WebSocket event: type=%s", event.type)
+
+    def _schedule_full_refresh(self) -> None:
+        """Schedule a full pull refresh on the coordinator."""
+        self._hass.async_create_task(self._coordinator.async_request_refresh())
+
+    async def _async_refresh_vehicle_status(self) -> None:
+        """Refresh vehicle-status cache and update listeners."""
+        try:
+            vehicle_status = await self._api_client.async_get_vehicle_status()
+        except Divera247ApiError as exc:
+            LOGGER.debug(
+                "DIVERA vehicle-status refresh via websocket failed: %s; "
+                "falling back to full refresh",
+                exc,
+            )
+            self._schedule_full_refresh()
+            return
+
+        if not vehicle_status.success:
+            LOGGER.debug(
+                "DIVERA vehicle-status websocket refresh returned success=false; "
+                "falling back to full refresh"
+            )
+            self._schedule_full_refresh()
+            return
+
+        self._coordinator.vehicle_status_by_id = {
+            str(item.id): item for item in vehicle_status.data if item.id is not None
+        }
+        self._coordinator.async_update_listeners()
 
     @staticmethod
     def _is_shutdown_exception_group(exc: BaseException) -> bool:

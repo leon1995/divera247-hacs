@@ -31,8 +31,6 @@ class Divera247DataUpdateCoordinator(DataUpdateCoordinator["PullData | None"]):
 
     async def _async_update_data(self) -> PullData | None:
         """Fetch the latest pull payload."""
-        if not hasattr(self, "vehicle_status_by_id"):
-            self.vehicle_status_by_id = {}
         client = self.config_entry.runtime_data.client
         try:
             response = await client.async_get_pull_all()

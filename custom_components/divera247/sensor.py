@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, TypeVar
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
 )
+from homeassistant.helpers.entity import EntityCategory
 
 from custom_components.divera247.entity import Divera247Entity
 
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     from divera247.models.event import EventResult
     from divera247.models.news import NewsResult
     from divera247.models.pull import PullData, VehicleStatusItem
+
+T = TypeVar("T")
 
 
 def _timestamp(
@@ -60,8 +63,11 @@ def _status_name(data: PullData) -> str | None:
     return definition.name if definition and definition.name else None
 
 
-def _status_note(data: PullData) -> str | None:
-    return data.status.note if data.status else None
+def _status_attrs(data: PullData) -> Mapping[str, object]:
+    """Return full status payload plus compatibility aliases."""
+    if data.status is None:
+        return {"status_id": None, "note": None, "vehicle_id": None}
+    return data.status.model_dump(mode="json")
 
 
 def _status_set_date(data: PullData) -> datetime.datetime | None:
@@ -90,14 +96,14 @@ def _new_messages(data: PullData) -> int | None:
 
 
 def _items_sorted(
-    items: Mapping[str, Any] | None,
+    items: Mapping[str, T] | None,
     sorting: Sequence[int] | None,
-) -> Sequence[Any]:
+) -> Sequence[T]:
     if not items:
         return []
     if not sorting:
         return list(items.values())
-    ordered: list[Any] = []
+    ordered: list[T] = []
     for item_id in sorting:
         item = items.get(str(item_id))
         if item is not None:
@@ -126,23 +132,24 @@ def _next_event(data: PullData) -> EventResult | None:
     candidates = [
         event
         for event in data.events.items.values()
-        if (event_date := _timestamp(event.date)) is not None and event_date >= now_ts
+        if (
+            (event_end := event.end) is not None
+            and event_end >= now_ts
+            or (
+                event.end is None
+                and (event_start := event.start) is not None
+                and event_start >= now_ts
+            )
+        )
     ]
     if not candidates:
         return None
-    return min(candidates, key=lambda event: _timestamp(event.date) or now_ts)
+    return min(candidates, key=lambda event: event.start or event.end or now_ts)
 
 
 def _latest_alarm_title(data: PullData) -> str | None:
     alarm = _latest_alarm(data)
     return alarm.title if alarm else None
-
-
-def _latest_alarm_location(data: PullData) -> str | None:
-    alarm = _latest_alarm(data)
-    if alarm is None:
-        return None
-    return alarm.address or alarm.destination_address
 
 
 def _latest_alarm_time(data: PullData) -> datetime.datetime | None:
@@ -152,15 +159,15 @@ def _latest_alarm_time(data: PullData) -> datetime.datetime | None:
     return _timestamp(alarm.date or alarm.ts_create or alarm.ts_update)
 
 
-def _latest_alarm_attrs(data: PullData) -> Mapping[str, int | str | None]:
+def _latest_alarm_attrs(data: PullData) -> Mapping[str, object]:
     """Return attributes for the latest alarm sensor."""
     alarm = _latest_alarm(data)
     if alarm is None:
-        return {"alarm_id": None, "keyword": None}
-    return {
-        "alarm_id": alarm.id,
-        "keyword": alarm.title,
-    }
+        return {}
+    payload = dict(alarm.model_dump(mode="json"))
+    payload.setdefault("alarm_id", payload.get("id"))
+    payload.setdefault("keyword", payload.get("title"))
+    return payload
 
 
 def _open_alarms(data: PullData) -> int | None:
@@ -182,28 +189,24 @@ def _unit_name(data: PullData) -> str | None:
     return data.cluster.name if data.cluster else None
 
 
+def _cluster_attrs(data: PullData) -> Mapping[str, object]:
+    """Return full cluster payload as attributes."""
+    if data.cluster is None:
+        return {}
+    return data.cluster.model_dump(mode="json")
+
+
 def _next_event_title(data: PullData) -> str | None:
     event = _next_event(data)
     return event.title if event else None
-
-
-def _next_event_start(data: PullData) -> datetime.datetime | None:
-    event = _next_event(data)
-    if event is None:
-        return None
-    return _timestamp(event.date)
 
 
 def _next_event_attrs(data: PullData) -> Mapping[str, str | int | None]:
     """Return attributes for the next event sensor."""
     event = _next_event(data)
     if event is None:
-        return {"event_id": None, "start": None}
-    start = _timestamp(event.date)
-    return {
-        "event_id": event.id,
-        "start": start.isoformat() if start else None,
-    }
+        return {field: None for field in EventResult.model_fields}
+    return event.model_dump(mode="json")
 
 
 def _access_bool(data: PullData, key: str) -> bool | None:
@@ -219,12 +222,38 @@ def _access_bool(data: PullData, key: str) -> bool | None:
     return None
 
 
+def _status_counts(data: PullData) -> dict[int, int]:
+    """Return aggregated user counts per status ID."""
+    counts: dict[int, int] = {}
+    if data.monitor is not None:
+        monitor_payload = data.monitor.model_dump(mode="json")
+        group_maps = [
+            value
+            for key, value in monitor_payload.items()
+            if key.isdigit() and isinstance(value, dict)
+        ]
+        for group_map in group_maps:
+            for status_id_raw, count_raw in group_map.items():
+                if not str(status_id_raw).isdigit() or not isinstance(count_raw, int):
+                    continue
+                status_id = int(status_id_raw)
+                counts[status_id] = counts.get(status_id, 0) + count_raw
+        if counts:
+            return counts
+
+    for ucr in data.ucr.values():
+        if ucr.status_id is None:
+            continue
+        counts[ucr.status_id] = counts.get(ucr.status_id, 0) + 1
+    return counts
+
+
 @dataclass(frozen=True, kw_only=True)
 class Divera247SensorEntityDescription(SensorEntityDescription):
     """Describe a DIVERA sensor and how to derive its state from pull data."""
 
-    value_fn: Callable[[PullData], Any]
-    attrs_fn: Callable[[PullData], Mapping[str, Any]] | None = None
+    value_fn: Callable[[PullData], object | None]
+    attrs_fn: Callable[[PullData], Mapping[str, object]] | None = None
 
 
 SENSORS: Sequence[Divera247SensorEntityDescription] = (
@@ -233,23 +262,7 @@ SENSORS: Sequence[Divera247SensorEntityDescription] = (
         translation_key="status",
         icon="mdi:account-alert",
         value_fn=_status_name,
-        attrs_fn=lambda data: {
-            "status_id": data.status.status_id if data.status else None,
-            "note": _status_note(data),
-            "vehicle_id": data.status.vehicle if data.status else None,
-        },
-    ),
-    Divera247SensorEntityDescription(
-        key="status_id",
-        translation_key="status_id",
-        icon="mdi:numeric",
-        value_fn=lambda data: data.status.status_id if data.status else None,
-    ),
-    Divera247SensorEntityDescription(
-        key="status_note",
-        translation_key="status_note",
-        icon="mdi:note-text-outline",
-        value_fn=_status_note,
+        attrs_fn=_status_attrs,
     ),
     Divera247SensorEntityDescription(
         key="status_vehicle_id",
@@ -281,8 +294,7 @@ SENSORS: Sequence[Divera247SensorEntityDescription] = (
     Divera247SensorEntityDescription(
         key="open_alarms",
         translation_key="open_alarms",
-        icon="mdi:alarm",
-        native_unit_of_measurement="alarms",
+        icon="mdi:counter",
         value_fn=_open_alarms,
     ),
     Divera247SensorEntityDescription(
@@ -300,16 +312,9 @@ SENSORS: Sequence[Divera247SensorEntityDescription] = (
         value_fn=_latest_alarm_time,
     ),
     Divera247SensorEntityDescription(
-        key="latest_alarm_location",
-        translation_key="latest_alarm_location",
-        icon="mdi:map-marker-alert-outline",
-        value_fn=_latest_alarm_location,
-    ),
-    Divera247SensorEntityDescription(
         key="new_messages",
         translation_key="new_messages",
         icon="mdi:message-badge",
-        native_unit_of_measurement="messages",
         value_fn=_new_messages,
     ),
     Divera247SensorEntityDescription(
@@ -320,105 +325,64 @@ SENSORS: Sequence[Divera247SensorEntityDescription] = (
         attrs_fn=_next_event_attrs,
     ),
     Divera247SensorEntityDescription(
-        key="next_event_start",
-        translation_key="next_event_start",
-        icon="mdi:calendar-clock",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        value_fn=_next_event_start,
-    ),
-    Divera247SensorEntityDescription(
         key="user",
         translation_key="user",
         icon="mdi:account",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_user_fullname,
-        entity_registry_enabled_default=False,
     ),
     Divera247SensorEntityDescription(
         key="unit",
         translation_key="unit",
         icon="mdi:home-group",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_unit_name,
-        entity_registry_enabled_default=False,
-    ),
-    Divera247SensorEntityDescription(
-        key="cluster_id",
-        translation_key="cluster_id",
-        icon="mdi:identifier",
-        value_fn=lambda data: data.cluster.id if data.cluster else None,
-        entity_registry_enabled_default=False,
-    ),
-    Divera247SensorEntityDescription(
-        key="ucr_active",
-        translation_key="ucr_active",
-        icon="mdi:account-key-outline",
-        value_fn=lambda data: data.ucr_active,
-        entity_registry_enabled_default=False,
-    ),
-    Divera247SensorEntityDescription(
-        key="ucr_default",
-        translation_key="ucr_default",
-        icon="mdi:account-star-outline",
-        value_fn=lambda data: data.ucr_default,
-        entity_registry_enabled_default=False,
-    ),
-    Divera247SensorEntityDescription(
-        key="server_time",
-        translation_key="server_time",
-        icon="mdi:server-clock",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        value_fn=lambda data: _timestamp(data.ts),
-        entity_registry_enabled_default=False,
+        attrs_fn=_cluster_attrs,
     ),
     Divera247SensorEntityDescription(
         key="can_set_status",
         translation_key="can_set_status",
         icon="mdi:account-switch",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: _access_bool(data, "status_manual"),
-        entity_registry_enabled_default=False,
     ),
     Divera247SensorEntityDescription(
         key="can_manage_alarms",
         translation_key="can_manage_alarms",
         icon="mdi:alarm-cog",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: _access_bool(data, "alarm"),
-        entity_registry_enabled_default=False,
     ),
     Divera247SensorEntityDescription(
         key="can_send_messages",
         translation_key="can_send_messages",
         icon="mdi:message-cog",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: _access_bool(data, "messages"),
-        entity_registry_enabled_default=False,
     ),
     Divera247SensorEntityDescription(
         key="can_manage_news",
         translation_key="can_manage_news",
         icon="mdi:newspaper-variant-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: _access_bool(data, "news"),
-        entity_registry_enabled_default=False,
     ),
     Divera247SensorEntityDescription(
         key="can_set_vehicle_status",
         translation_key="can_set_vehicle_status",
         icon="mdi:fire-truck-alert",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: _access_bool(data, "status_vehicle"),
-        entity_registry_enabled_default=False,
     ),
 )
 
 
-def _vehicle_payload(vehicle: VehicleStatusItem) -> Mapping[str, Any]:
+def _vehicle_payload(vehicle: VehicleStatusItem) -> Mapping[str, object]:
     """Return a dict payload for a vehicle model."""
-    if hasattr(vehicle, "model_dump"):
-        return vehicle.model_dump(mode="json", exclude_none=True)
-    if hasattr(vehicle, "dict"):
-        return vehicle.dict(exclude_none=True)
-    if hasattr(vehicle, "__dict__"):
-        return {k: v for k, v in vars(vehicle).items() if v is not None}
-    return {}
+    return vehicle.model_dump(mode="json")
 
 
-def _vehicle_status_value(vehicle: VehicleStatusItem) -> Any:
+def _vehicle_status_value(vehicle: VehicleStatusItem) -> int | str | None:
     """Pick a best-effort status value for a vehicle sensor."""
     return (
         vehicle.fmsstatus
@@ -436,6 +400,13 @@ async def async_setup_entry(
 ) -> None:
     """Set up the sensor platform."""
     coordinator = entry.runtime_data.coordinator
+    status_ids: list[int] = []
+    if coordinator.data is not None and coordinator.data.cluster is not None:
+        status_ids = sorted(
+            int(status_id)
+            for status_id in coordinator.data.cluster.status
+            if str(status_id).isdigit()
+        )
     async_add_entities(
         [
             *(Divera247Sensor(coordinator, description) for description in SENSORS),
@@ -443,6 +414,7 @@ async def async_setup_entry(
                 Divera247VehicleStatusSensor(coordinator, vehicle_id)
                 for vehicle_id in coordinator.vehicle_status_by_id
             ),
+            *(Divera247StatusCountSensor(coordinator, status_id) for status_id in status_ids),
         ]
     )
 
@@ -461,7 +433,7 @@ class Divera247Sensor(Divera247Entity, SensorEntity):
         super().__init__(coordinator, entity_description)
 
     @property
-    def native_value(self) -> Any:
+    def native_value(self) -> object | None:
         """Return the current value derived from the pull payload."""
         data = self.coordinator.data
         if data is None:
@@ -469,7 +441,7 @@ class Divera247Sensor(Divera247Entity, SensorEntity):
         return self.entity_description.value_fn(data)
 
     @property
-    def extra_state_attributes(self) -> Mapping[str, Any] | None:
+    def extra_state_attributes(self) -> Mapping[str, object] | None:
         """Return any extra attributes declared on the description."""
         data = self.coordinator.data
         if data is None or self.entity_description.attrs_fn is None:
@@ -510,7 +482,7 @@ class Divera247VehicleStatusSensor(Divera247Entity, SensorEntity):
         return f"Vehicle {self._vehicle_id}"
 
     @property
-    def native_value(self) -> Any:
+    def native_value(self) -> int | str | None:
         """Return current vehicle status."""
         vehicle = self._vehicle
         if vehicle is None:
@@ -518,7 +490,7 @@ class Divera247VehicleStatusSensor(Divera247Entity, SensorEntity):
         return _vehicle_status_value(vehicle)
 
     @property
-    def extra_state_attributes(self) -> Mapping[str, Any]:
+    def extra_state_attributes(self) -> Mapping[str, object]:
         """Return all available vehicle metadata as attributes."""
         vehicle = self._vehicle
         if vehicle is None:
@@ -526,3 +498,55 @@ class Divera247VehicleStatusSensor(Divera247Entity, SensorEntity):
         payload = dict(_vehicle_payload(vehicle))
         payload.setdefault("vehicle_id", payload.get("id", self._vehicle_id))
         return payload
+
+
+class Divera247StatusCountSensor(Divera247Entity, SensorEntity):
+    """Sensor entity exposing the current count for one status ID."""
+
+    _attr_icon = "mdi:counter"
+
+    def __init__(
+        self,
+        coordinator: Divera247DataUpdateCoordinator,
+        status_id: int,
+    ) -> None:
+        """Initialise status-count sensor entity."""
+        super().__init__(
+            coordinator,
+            SensorEntityDescription(key=f"status_count_{status_id}"),
+        )
+        self._status_id = status_id
+
+    @property
+    def name(self) -> str:
+        """Return a human-readable entity name."""
+        cluster = self.coordinator.data.cluster if self.coordinator.data else None
+        definition = (
+            cluster.status.get(str(self._status_id))
+            if cluster is not None and cluster.status
+            else None
+        )
+        status_name = definition.name if definition and definition.name else self._status_id
+        return f"Status {status_name} count"
+
+    @property
+    def native_value(self) -> int:
+        """Return current number of users in this status."""
+        data = self.coordinator.data
+        if data is None:
+            return 0
+        return _status_counts(data).get(self._status_id, 0)
+
+    @property
+    def extra_state_attributes(self) -> Mapping[str, object]:
+        """Return details for this status-count sensor."""
+        cluster = self.coordinator.data.cluster if self.coordinator.data else None
+        definition = (
+            cluster.status.get(str(self._status_id))
+            if cluster is not None and cluster.status
+            else None
+        )
+        return {
+            "status_id": self._status_id,
+            "status_name": definition.name if definition and definition.name else None,
+        }

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "DIVERA 24/7",
-        "description": "Enter your personal DIVERA 24/7 access key. You can find it in the DIVERA web app under your user profile \u2192 API.",
+        "description": "Enter your personal DIVERA 24/7 access key. You can create it in the DIVERA web app under [Settings \u2192 Login](https://app.divera247.com/account/einstellungen.html).",
         "data": {
           "access_key": "Access key"
         }
@@ -21,8 +21,6 @@
   "entity": {
     "sensor": {
       "status": {"name": "Status"},
-      "status_id": {"name": "Status ID"},
-      "status_note": {"name": "Status note"},
       "status_vehicle_id": {"name": "Status vehicle ID"},
       "status_changed": {"name": "Status changed"},
       "next_status_reset": {"name": "Next status reset"},
@@ -31,15 +29,9 @@
       "new_messages": {"name": "New messages"},
       "latest_alarm": {"name": "Latest alarm"},
       "latest_alarm_time": {"name": "Latest alarm time"},
-      "latest_alarm_location": {"name": "Latest alarm location"},
       "next_event": {"name": "Next event"},
-      "next_event_start": {"name": "Next event start"},
       "user": {"name": "User"},
       "unit": {"name": "Unit"},
-      "cluster_id": {"name": "Cluster ID"},
-      "ucr_active": {"name": "Active UCR"},
-      "ucr_default": {"name": "Default UCR"},
-      "server_time": {"name": "Server time"},
       "can_set_status": {"name": "Can set status"},
       "can_manage_alarms": {"name": "Can manage alarms"},
       "can_send_messages": {"name": "Can send messages"},
@@ -48,7 +40,6 @@
     },
     "binary_sensor": {
       "active_alarm": {"name": "Active alarm"},
-      "unread_alarm": {"name": "Unread alarm"},
       "status_reset_scheduled": {"name": "Status reset scheduled"}
     },
     "calendar": {

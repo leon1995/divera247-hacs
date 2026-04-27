@@ -77,6 +77,7 @@ async def async_setup_entry(
         name=DOMAIN,
         update_interval=datetime.timedelta(seconds=DEFAULT_SCAN_INTERVAL_SECONDS),
     )
+    coordinator.vehicle_status_by_id = {}
     entry.runtime_data = Divera247RuntimeData(
         client=client,
         coordinator=coordinator,

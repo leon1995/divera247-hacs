@@ -8,7 +8,7 @@ entry title from the fire station/cluster name plus active UCR ID.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import voluptuous as vol
 from homeassistant import config_entries
@@ -33,7 +33,7 @@ class Divera247ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self,
-        user_input: Mapping[str, Any] | None = None,
+        user_input: Mapping[str, str] | None = None,
     ) -> config_entries.ConfigFlowResult:
         """Handle the access-key entry step."""
         errors: dict[str, str] = {}
