@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "DIVERA 24/7",
-        "description": "Gib deinen pers\u00f6nlichen DIVERA 24/7 Zugangsschl\u00fcssel (API Key) ein. Du kannst ihn in der DIVERA Web-App unter [Einstellungen \u2192 Login](https://app.divera247.com/account/einstellungen.html) erstellen.",
+        "description": "Gib deinen pers\u00f6nlichen DIVERA 24/7 Zugangsschl\u00fcssel (API Key) ein. Du kannst ihn in der DIVERA Web-App unter Einstellungen -> Login erstellen.",
         "data": {
           "access_key": "Zugangsschl\u00fcssel"
         }

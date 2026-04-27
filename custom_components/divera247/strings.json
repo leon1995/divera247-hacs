@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "DIVERA 24/7",
-        "description": "Enter your personal DIVERA 24/7 access key. You can create it in the DIVERA web app under [Settings → Login](https://app.divera247.com/account/einstellungen.html).",
+        "description": "Enter your personal DIVERA 24/7 access key. You can create it in the DIVERA web app under Settings -> Login.",
         "data": {
           "access_key": "Access key"
         }
