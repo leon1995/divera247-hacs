@@ -21,11 +21,11 @@
   "entity": {
     "sensor": {
       "status": {"name": "Status"},
-      "status_vehicle_id": {"name": "Status Fahrzeug-ID"},
       "status_changed": {"name": "Status ge\u00e4ndert"},
       "next_status_reset": {"name": "N\u00e4chste Statusr\u00fccksetzung"},
       "new_alarms": {"name": "Neue Alarme"},
       "open_alarms": {"name": "Offene Alarme"},
+      "all_alarms": {"name": "Alle Alarme"},
       "new_messages": {"name": "Neue Mitteilungen"},
       "latest_alarm": {"name": "Letzter Alarm"},
       "next_event": {"name": "N\u00e4chster Termin"},

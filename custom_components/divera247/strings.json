@@ -29,9 +29,6 @@
       "status_note": {
         "name": "Status note"
       },
-      "status_vehicle_id": {
-        "name": "Status vehicle ID"
-      },
       "status_changed": {
         "name": "Status changed"
       },
@@ -43,6 +40,9 @@
       },
       "open_alarms": {
         "name": "Open alarms"
+      },
+      "all_alarms": {
+        "name": "All alarms"
       },
       "new_messages": {
         "name": "New messages"

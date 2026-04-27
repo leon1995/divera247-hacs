@@ -44,7 +44,6 @@ A single device per configured Access Key, named after the owning user.
 | Entity | Description |
 | --- | --- |
 | `sensor.<user>_status` | Current user status (name); attributes include the full DIVERA status payload |
-| `sensor.<user>_status_vehicle_id` | Vehicle ID currently attached to your status (if set) |
 | `sensor.<user>_status_changed` | Timestamp of the last status change |
 | `sensor.<user>_next_status_reset` | Timestamp of the next automatic status reset |
 | `sensor.<user>_new_alarms` | Counter: number of new alarms in the pull payload |
