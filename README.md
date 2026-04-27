@@ -10,11 +10,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/leon1995/divera247-hacs?sort=semver)](https://github.com/leon1995/divera247-hacs/releases)
 ![HA Analytics](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.divera247.total&label=Active%20Installations)
 [![hacs](https://img.shields.io/badge/HACS-Integration-blue.svg)](https://github.com/hacs/integration)
-[![HASS QS](https://github.com/leon1995/divera247-hacs/actions/workflows/hass.yml/badge.svg)](https://github.com/leon1995/divera247-hacs/actions/workflows/hass.yml)
-[![HACS QS](https://github.com/leon1995/divera247-hacs/actions/workflows/hacs.yml/badge.svg)](https://github.com/leon1995/divera247-hacs/actions/workflows/hacs.yml)
-
-> **Warning**
-> This integration is still a work in progress and may change or break between updates.
+[![Validate](https://github.com/leon1995/divera247-hacs/actions/workflows/validate.yml/badge.svg)](https://github.com/leon1995/divera247-hacs/actions/workflows/validate.yml)
 
 Home Assistant custom integration for [DIVERA 24/7](https://www.divera247.com/),
 built on top of the async [`divera247`](https://github.com/leon1995/divera247)
