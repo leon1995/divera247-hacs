@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build HACS ZIP
+        run: |
+          mkdir -p dist
+          cd custom_components/divera247
+          zip -r ../../dist/Divera247.zip . \
+            -x "*/__pycache__/*" "*.pyc"
+
+      - name: Upload asset to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Divera247.zip
