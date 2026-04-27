@@ -23,3 +23,22 @@ keep-runtime-typing = true
 
 [lint.mccabe]
 max-complexity = 25
+
+[lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",    # assert statements are standard in pytest tests
+    "SLF001",  # tests may access private methods for branch coverage
+    "PLR2004", # literal values are common in tests
+    "ARG001",  # fixtures/params may be unused in some test branches
+    "ARG005",  # lambda args in stubs/mocks are intentionally unused
+    "ANN",     # strict annotations on local test helpers are noisy
+    "E741",    # short test-local variable names are acceptable
+    "FBT001",  # boolean args in tiny test helpers are acceptable
+    "FBT002",  # boolean default args in tiny test helpers are acceptable
+    "DTZ001",  # naive datetime construction is intentional in timestamp tests
+    "INP001",  # tests package does not need __init__.py
+    "N818",    # exception helper names in tests are intentionally minimal
+    "EM101",   # inline exception strings are fine in tests
+    "RSE102",  # harmless style in raised test exceptions
+    "RUF100",  # allow explicit/no-longer-needed noqa in test scaffolding
+]

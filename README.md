@@ -1,5 +1,18 @@
 # DIVERA 24/7 for Home Assistant
 
+<p align="center">
+  <a href="https://www.divera247.com">
+    <img src="https://www.divera247.com/downloads/grafik/divera247_logo_800.png" alt="Divera 24/7">
+  </a>
+</p>
+
+![update-badge](https://img.shields.io/github/last-commit/leon1995/divera247-hacs?label=last%20update)
+[![GitHub Release](https://img.shields.io/github/v/release/leon1995/divera247-hacs?sort=semver)](https://github.com/leon1995/divera247-hacs/releases)
+![HA Analytics](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanalytics.home-assistant.io%2Fcustom_integrations.json&query=%24.divera247.total&label=Active%20Installations)
+[![hacs](https://img.shields.io/badge/HACS-Integration-blue.svg)](https://github.com/hacs/integration)
+[![HASS QS](https://github.com/leon1995/divera247-hacs/actions/workflows/hass.yml/badge.svg)](https://github.com/leon1995/divera247-hacs/actions/workflows/hass.yml)
+[![HACS QS](https://github.com/leon1995/divera247-hacs/actions/workflows/hacs.yml/badge.svg)](https://github.com/leon1995/divera247-hacs/actions/workflows/hacs.yml)
+
 > **Warning**
 > This integration is still a work in progress and may change or break between updates.
 
@@ -13,10 +26,8 @@ This integration is inspired by [moehrem/DiveraControl](https://github.com/moehr
 
 ### Via HACS (recommended)
 
-1. In HACS, open _Integrations_ → _⋮_ → _Custom repositories_.
-2. Add this repository's URL with category _Integration_.
-3. Search for **DIVERA 24/7**, install, and restart Home Assistant.
-4. Go to _Settings_ → _Devices & services_ → _Add integration_ → **DIVERA 24/7**.
+1. [Install HACS](https://www.hacs.xyz/docs/use/)
+2. [![add HACS Repo](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=leon1995&repository=divera247-hacs&category=Integration)
 
 ### Manual
 
@@ -27,7 +38,7 @@ Copy the `custom_components/divera247` folder into your Home Assistant
 
 The integration is configured entirely through the UI. You need to create an
 **Api Key** in the DIVERA web app under
-[_Einstellungen -> Login_](https://app.divera247.com/account/einstellungen.html).
+[_Settings -> Login_](https://app.divera247.com/account/einstellungen.html).
 
 Only the Access Key auth flow is exposed in the UI -- it is the simplest way
 to authenticate and works for both REST and WebSocket endpoints of the DIVERA
