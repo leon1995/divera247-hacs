@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
@@ -27,6 +28,8 @@ STATUS_DESCRIPTION = SelectEntityDescription(
     translation_key="status_select",
     icon="mdi:account-switch",
 )
+
+_PENDING_STATUS_TTL_SECONDS = 30.0
 
 
 async def async_setup_entry(
@@ -85,6 +88,8 @@ class Divera247StatusSelect(Divera247Entity, SelectEntity):
     def __init__(self, coordinator: Divera247DataUpdateCoordinator) -> None:
         """Initialise the select entity."""
         super().__init__(coordinator, STATUS_DESCRIPTION)
+        self._pending_status_id: int | None = None
+        self._pending_status_started_at: float = 0.0
 
     def _definitions(self) -> Sequence[PullStatusDefinitionData]:
         """Return the currently visible status definitions."""
@@ -102,10 +107,27 @@ class Divera247StatusSelect(Divera247Entity, SelectEntity):
     def current_option(self) -> str | None:
         """Return the name of the currently set status, or ``None``."""
         data = self.coordinator.data
-        if data is None or data.status is None or data.status.status_id is None:
+        if data is None:
+            return None
+        actual_status_id = data.status.status_id if data.status is not None else None
+        if self._pending_status_id is not None:
+            # Keep showing the newly selected status for a short period so
+            # delayed pull/ws updates cannot briefly flip the UI back.
+            pending_age = time.monotonic() - self._pending_status_started_at
+            if pending_age <= _PENDING_STATUS_TTL_SECONDS:
+                if actual_status_id == self._pending_status_id:
+                    self._pending_status_id = None
+                else:
+                    for definition in self._definitions():
+                        if definition.id == self._pending_status_id:
+                            return definition.name
+            else:
+                self._pending_status_id = None
+
+        if actual_status_id is None:
             return None
         for definition in self._definitions():
-            if definition.id == data.status.status_id:
+            if definition.id == actual_status_id:
                 return definition.name
         return None
 
@@ -126,6 +148,12 @@ class Divera247StatusSelect(Divera247Entity, SelectEntity):
                     raise HomeAssistantError(
                         msg,
                     ) from exc
+                self._pending_status_id = definition.id
+                self._pending_status_started_at = time.monotonic()
+                data = self.coordinator.data
+                if data is not None and data.status is not None:
+                    data.status.status_id = definition.id
+                    self.coordinator.async_set_updated_data(data)
                 await self.coordinator.async_request_refresh()
                 return
 
