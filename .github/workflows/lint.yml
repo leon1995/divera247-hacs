@@ -19,8 +19,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with: 
           python-version: "3.14"
-      
-      - run: uv venv
 
       - name: Install requirements with uv
         run: uv pip install -r requirements.txt

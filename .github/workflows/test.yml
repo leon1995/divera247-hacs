@@ -17,8 +17,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.14"
-    
-      - run: uv venv
 
       - name: Install dependencies with uv
         run: |
