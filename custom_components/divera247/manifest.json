@@ -10,7 +10,7 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/leon1995/divera247-hacs/issues",
   "requirements": [
-    "divera247[ws]==0.0.1b7"
+    "divera247[ws]==0.0.1b8"
   ],
   "version": "0.1.0"
 }
