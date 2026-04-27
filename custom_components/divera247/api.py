@@ -9,18 +9,14 @@ of Home Assistant only deals with our types.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from divera247 import (
     Divera247Client,
     DiveraAPIError,
     DiveraAuthError,
     RefreshingJwtAuth,
 )
+from divera247.models.pull import PullAllResponse, VehicleStatusResponse
 from divera247.models.statusgeber import StatusgeberPayload, StatusgeberStatus
-
-if TYPE_CHECKING:
-    from divera247.models.pull import PullAllResponse, VehicleStatusResponse
 
 
 class Divera247ApiError(Exception):
@@ -73,7 +69,9 @@ class Divera247ApiClient:
         all of the read-only entities exposed by the integration.
         """
         try:
-            return await self._client.pull.get_all()
+            response = await self._client.get("v2/pull/all")
+            payload = response.json()
+            pull_response = PullAllResponse.model_validate(payload)
         except DiveraAuthError as exc:
             raise Divera247ApiAuthError(str(exc)) from exc
         except DiveraAPIError as exc:
@@ -81,6 +79,8 @@ class Divera247ApiClient:
         except Exception as exc:
             msg = f"Unexpected error fetching DIVERA pull data: {exc}"
             raise Divera247ApiCommunicationError(msg) from exc
+        else:
+            return pull_response
 
     async def async_set_status(
         self,

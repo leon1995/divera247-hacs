@@ -28,15 +28,9 @@
       "open_alarms": {"name": "Open alarms"},
       "new_messages": {"name": "New messages"},
       "latest_alarm": {"name": "Latest alarm"},
-      "latest_alarm_time": {"name": "Latest alarm time"},
       "next_event": {"name": "Next event"},
       "user": {"name": "User"},
-      "unit": {"name": "Unit"},
-      "can_set_status": {"name": "Can set status"},
-      "can_manage_alarms": {"name": "Can manage alarms"},
-      "can_send_messages": {"name": "Can send messages"},
-      "can_manage_news": {"name": "Can manage news"},
-      "can_set_vehicle_status": {"name": "Can set vehicle status"}
+      "unit": {"name": "Unit"}
     },
     "binary_sensor": {
       "active_alarm": {"name": "Active alarm"},

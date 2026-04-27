@@ -51,16 +51,10 @@ A single device per configured Access Key, named after the owning user.
 | `sensor.<user>_open_alarms` | Counter: number of currently open alarms |
 | `sensor.<user>_new_messages` | Counter: number of new messages |
 | `sensor.<user>_latest_alarm` | Headline (_Stichwort_) of the most recent alarm; attributes include full alarm payload |
-| `sensor.<user>_latest_alarm_time` | Timestamp of the most recent alarm |
 | `sensor.<user>_next_event` | Title of the next upcoming event; attributes include full event payload |
 | `sensor.<user>_status_count_<id>` | Dynamic sensors: one per available status ID, value is current member count in that status |
 | `sensor.<user>_user` | Full name (diagnostic) |
 | `sensor.<user>_unit` | Configured unit/cluster name (diagnostic); attributes include full cluster payload (including cluster ID) |
-| `sensor.<user>_can_set_status` | Whether the account can change user status (diagnostic) |
-| `sensor.<user>_can_manage_alarms` | Whether the account can manage alarms (diagnostic) |
-| `sensor.<user>_can_send_messages` | Whether the account can send messages (diagnostic) |
-| `sensor.<user>_can_manage_news` | Whether the account can manage news (diagnostic) |
-| `sensor.<user>_can_set_vehicle_status` | Whether the account can change vehicle status (diagnostic) |
 
 ### Binary sensors
 

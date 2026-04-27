@@ -8,8 +8,9 @@ alarm/news/event summaries, scheduling data and diagnostic metadata.
 from __future__ import annotations
 
 import datetime
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -19,21 +20,16 @@ from homeassistant.components.sensor import (
 from homeassistant.helpers.entity import EntityCategory
 
 from custom_components.divera247.entity import Divera247Entity
+from divera247.models.event import EventResult
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
-
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
     from custom_components.divera247.coordinator import Divera247DataUpdateCoordinator
     from custom_components.divera247.data import Divera247ConfigEntry
     from divera247.models.alarm import AlarmResult
-    from divera247.models.event import EventResult
-    from divera247.models.news import NewsResult
     from divera247.models.pull import PullData, VehicleStatusItem
-
-T = TypeVar("T")
 
 
 def _timestamp(
@@ -95,7 +91,7 @@ def _new_messages(data: PullData) -> int | None:
     return data.news.new if data.news else None
 
 
-def _items_sorted(
+def _items_sorted[T](
     items: Mapping[str, T] | None,
     sorting: Sequence[int] | None,
 ) -> Sequence[T]:
@@ -115,14 +111,7 @@ def _latest_alarm(data: PullData) -> AlarmResult | None:
     if data.alarm is None:
         return None
     alarms = _items_sorted(data.alarm.items, data.alarm.sorting)
-    return alarms[-1] if alarms else None
-
-
-def _latest_news(data: PullData) -> NewsResult | None:
-    if data.news is None:
-        return None
-    news = _items_sorted(data.news.items, data.news.sorting)
-    return news[-1] if news else None
+    return alarms[0] if alarms else None
 
 
 def _next_event(data: PullData) -> EventResult | None:
@@ -133,8 +122,7 @@ def _next_event(data: PullData) -> EventResult | None:
         event
         for event in data.events.items.values()
         if (
-            (event_end := event.end) is not None
-            and event_end >= now_ts
+            ((event_end := event.end) is not None and event_end >= now_ts)
             or (
                 event.end is None
                 and (event_start := event.start) is not None
@@ -150,13 +138,6 @@ def _next_event(data: PullData) -> EventResult | None:
 def _latest_alarm_title(data: PullData) -> str | None:
     alarm = _latest_alarm(data)
     return alarm.title if alarm else None
-
-
-def _latest_alarm_time(data: PullData) -> datetime.datetime | None:
-    alarm = _latest_alarm(data)
-    if alarm is None:
-        return None
-    return _timestamp(alarm.date or alarm.ts_create or alarm.ts_update)
 
 
 def _latest_alarm_attrs(data: PullData) -> Mapping[str, object]:
@@ -205,42 +186,78 @@ def _next_event_attrs(data: PullData) -> Mapping[str, str | int | None]:
     """Return attributes for the next event sensor."""
     event = _next_event(data)
     if event is None:
-        return {field: None for field in EventResult.model_fields}
+        return dict.fromkeys(EventResult.model_fields, None)
     return event.model_dump(mode="json")
-
-
-def _access_bool(data: PullData, key: str) -> bool | None:
-    if data.user is None:
-        return None
-    raw = data.user.access.get(key)
-    if isinstance(raw, bool):
-        return raw
-    if isinstance(raw, int):
-        return raw > 0
-    if isinstance(raw, str):
-        return raw.lower() in {"1", "true", "yes", "on"}
-    return None
 
 
 def _status_counts(data: PullData) -> dict[int, int]:
     """Return aggregated user counts per status ID."""
-    counts: dict[int, int] = {}
     if data.monitor is not None:
-        monitor_payload = data.monitor.model_dump(mode="json")
-        group_maps = [
-            value
-            for key, value in monitor_payload.items()
-            if key.isdigit() and isinstance(value, dict)
-        ]
-        for group_map in group_maps:
-            for status_id_raw, count_raw in group_map.items():
-                if not str(status_id_raw).isdigit() or not isinstance(count_raw, int):
-                    continue
-                status_id = int(status_id_raw)
-                counts[status_id] = counts.get(status_id, 0) + count_raw
+        counts = _counts_from_monitor_anonymous(data.monitor)
         if counts:
             return counts
 
+        counts = _counts_from_monitor_detailed(data.monitor)
+        if counts:
+            return counts
+
+        counts = _counts_from_monitor_users(data.monitor)
+        if counts:
+            return counts
+
+    return _counts_from_ucr(data)
+
+
+def _counts_from_monitor_anonymous(monitor: object) -> dict[int, int]:
+    """Build counts from monitor anonymous-by-status data."""
+    anonymous_by_status = getattr(monitor, "anonymous_by_status", None)
+    if not isinstance(anonymous_by_status, Mapping):
+        return {}
+
+    counts: dict[int, int] = {}
+    for status_id_raw, entry in anonymous_by_status.items():
+        if not str(status_id_raw).isdigit():
+            continue
+        all_count = getattr(entry, "all", None)
+        if isinstance(all_count, int):
+            counts[int(status_id_raw)] = all_count
+    return counts
+
+
+def _counts_from_monitor_detailed(monitor: object) -> dict[int, int]:
+    """Build counts from monitor detailed-by-status data."""
+    detailed_by_status = getattr(monitor, "detailed_by_status", None)
+    if not isinstance(detailed_by_status, Mapping):
+        return {}
+
+    counts: dict[int, int] = {}
+    for status_id_raw, entry in detailed_by_status.items():
+        if not str(status_id_raw).isdigit():
+            continue
+        all_users = getattr(entry, "all", None)
+        if isinstance(all_users, Sequence):
+            counts[int(status_id_raw)] = len(all_users)
+    return counts
+
+
+def _counts_from_monitor_users(monitor: object) -> dict[int, int]:
+    """Build counts from monitor user status entries."""
+    users = getattr(monitor, "users", None)
+    if not isinstance(users, Mapping):
+        return {}
+
+    counts: dict[int, int] = {}
+    for user_entry in users.values():
+        status_id = getattr(user_entry, "status", None)
+        if not isinstance(status_id, int):
+            continue
+        counts[status_id] = counts.get(status_id, 0) + 1
+    return counts
+
+
+def _counts_from_ucr(data: PullData) -> dict[int, int]:
+    """Build counts from UCR entries as fallback."""
+    counts: dict[int, int] = {}
     for ucr in data.ucr.values():
         if ucr.status_id is None:
             continue
@@ -288,7 +305,6 @@ SENSORS: Sequence[Divera247SensorEntityDescription] = (
         key="new_alarms",
         translation_key="new_alarms",
         icon="mdi:alarm-light",
-        native_unit_of_measurement="alarms",
         value_fn=_new_alarms,
     ),
     Divera247SensorEntityDescription(
@@ -303,13 +319,6 @@ SENSORS: Sequence[Divera247SensorEntityDescription] = (
         icon="mdi:alarm-light-outline",
         value_fn=_latest_alarm_title,
         attrs_fn=_latest_alarm_attrs,
-    ),
-    Divera247SensorEntityDescription(
-        key="latest_alarm_time",
-        translation_key="latest_alarm_time",
-        icon="mdi:clock-alert-outline",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        value_fn=_latest_alarm_time,
     ),
     Divera247SensorEntityDescription(
         key="new_messages",
@@ -338,41 +347,6 @@ SENSORS: Sequence[Divera247SensorEntityDescription] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_unit_name,
         attrs_fn=_cluster_attrs,
-    ),
-    Divera247SensorEntityDescription(
-        key="can_set_status",
-        translation_key="can_set_status",
-        icon="mdi:account-switch",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda data: _access_bool(data, "status_manual"),
-    ),
-    Divera247SensorEntityDescription(
-        key="can_manage_alarms",
-        translation_key="can_manage_alarms",
-        icon="mdi:alarm-cog",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda data: _access_bool(data, "alarm"),
-    ),
-    Divera247SensorEntityDescription(
-        key="can_send_messages",
-        translation_key="can_send_messages",
-        icon="mdi:message-cog",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda data: _access_bool(data, "messages"),
-    ),
-    Divera247SensorEntityDescription(
-        key="can_manage_news",
-        translation_key="can_manage_news",
-        icon="mdi:newspaper-variant-outline",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda data: _access_bool(data, "news"),
-    ),
-    Divera247SensorEntityDescription(
-        key="can_set_vehicle_status",
-        translation_key="can_set_vehicle_status",
-        icon="mdi:fire-truck-alert",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda data: _access_bool(data, "status_vehicle"),
     ),
 )
 
@@ -414,7 +388,10 @@ async def async_setup_entry(
                 Divera247VehicleStatusSensor(coordinator, vehicle_id)
                 for vehicle_id in coordinator.vehicle_status_by_id
             ),
-            *(Divera247StatusCountSensor(coordinator, status_id) for status_id in status_ids),
+            *(
+                Divera247StatusCountSensor(coordinator, status_id)
+                for status_id in status_ids
+            ),
         ]
     )
 
@@ -526,8 +503,10 @@ class Divera247StatusCountSensor(Divera247Entity, SensorEntity):
             if cluster is not None and cluster.status
             else None
         )
-        status_name = definition.name if definition and definition.name else self._status_id
-        return f"Status {status_name} count"
+        status_name = (
+            definition.name if definition and definition.name else self._status_id
+        )
+        return f"Status: {status_name}"
 
     @property
     def native_value(self) -> int:

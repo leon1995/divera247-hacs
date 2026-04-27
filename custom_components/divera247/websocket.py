@@ -29,9 +29,9 @@ from typing import TYPE_CHECKING
 from custom_components.divera247.api import Divera247ApiError
 from custom_components.divera247.const import LOGGER
 from divera247.websocket import (
+    ClusterMonitorEvent,
     ClusterPullEvent,
     ClusterVehicleEvent,
-    ClusterMonitorEvent,
     UnknownEvent,
     UserStatusEvent,
     WebSocketAuthenticationError,
@@ -135,13 +135,17 @@ class Divera247WebSocketListener:
             return
         if event.type == "cluster-vehicle":
             LOGGER.debug(
-                "DIVERA websocket fallback vehicle event (%s); refreshing vehicle cache",
+                "DIVERA websocket fallback vehicle event (%s); "
+                "refreshing vehicle cache",
                 event.type,
             )
             self._hass.async_create_task(self._async_refresh_vehicle_status())
             return
         if event.type in {"cluster-monitor", "cluster-pull"}:
-            LOGGER.debug("DIVERA websocket fallback change event (%s); refreshing", event.type)
+            LOGGER.debug(
+                "DIVERA websocket fallback change event (%s); refreshing",
+                event.type,
+            )
             self._schedule_full_refresh()
             return
         LOGGER.debug("DIVERA unknown WebSocket event: type=%s", event.type)

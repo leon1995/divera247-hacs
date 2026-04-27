@@ -122,11 +122,7 @@ def _async_update_entry_title(
     if not title_base.casefold().startswith("feuerwehr"):
         title_base = f"Feuerwehr {title_base}"
     ucr_id = data.ucr_active or data.ucr_default
-    new_title = (
-        f"{title_base} {ucr_id}"
-        if ucr_id is not None
-        else title_base
-    )
+    new_title = f"{title_base} {ucr_id}" if ucr_id is not None else title_base
     if entry.title != new_title:
         hass.config_entries.async_update_entry(entry, title=new_title)
 

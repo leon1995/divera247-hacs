@@ -28,15 +28,9 @@
       "open_alarms": {"name": "Offene Alarme"},
       "new_messages": {"name": "Neue Mitteilungen"},
       "latest_alarm": {"name": "Letzter Alarm"},
-      "latest_alarm_time": {"name": "Zeitpunkt letzter Alarm"},
       "next_event": {"name": "N\u00e4chster Termin"},
       "user": {"name": "Benutzer"},
-      "unit": {"name": "Einheit"},
-      "can_set_status": {"name": "Darf Status setzen"},
-      "can_manage_alarms": {"name": "Darf Alarme verwalten"},
-      "can_send_messages": {"name": "Darf Mitteilungen senden"},
-      "can_manage_news": {"name": "Darf News verwalten"},
-      "can_set_vehicle_status": {"name": "Darf Fahrzeugstatus setzen"}
+      "unit": {"name": "Einheit"}
     },
     "binary_sensor": {
       "active_alarm": {"name": "Aktiver Alarm"},

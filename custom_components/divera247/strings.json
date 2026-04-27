@@ -50,9 +50,6 @@
       "latest_alarm": {
         "name": "Latest alarm"
       },
-      "latest_alarm_time": {
-        "name": "Latest alarm time"
-      },
       "latest_alarm_location": {
         "name": "Latest alarm location"
       },
@@ -79,21 +76,6 @@
       },
       "server_time": {
         "name": "Server time"
-      },
-      "can_set_status": {
-        "name": "Can set status"
-      },
-      "can_manage_alarms": {
-        "name": "Can manage alarms"
-      },
-      "can_send_messages": {
-        "name": "Can send messages"
-      },
-      "can_manage_news": {
-        "name": "Can manage news"
-      },
-      "can_set_vehicle_status": {
-        "name": "Can set vehicle status"
       }
     },
     "binary_sensor": {

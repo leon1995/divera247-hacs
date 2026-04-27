@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from homeassistant.components.device_tracker import SourceType
@@ -13,6 +12,8 @@ from homeassistant.helpers.entity import EntityDescription
 from custom_components.divera247.entity import Divera247Entity
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
