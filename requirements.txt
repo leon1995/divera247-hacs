@@ -3,6 +3,6 @@ homeassistant==2026.3.2
 pip>=26.1
 ruff==0.15.12
 divera247[ws]==0.0.1b9
-pytest>=9.0.3
+pytest>=9.1.0
 pytest-cov>=7.1.0
 ty>=0.0.32
