@@ -1,7 +1,7 @@
 colorlog==6.10.1
 homeassistant==2026.3.2
 pip>=26.1
-ruff==0.15.12
+ruff==0.15.21
 divera247[ws]==0.0.1b9
 pytest>=9.0.3
 pytest-cov>=7.1.0
